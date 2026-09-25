@@ -1,0 +1,29 @@
+name: draw
+
+on:
+  schedule:
+    - cron: "3 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  draw:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The whole history is one commit: every run throws the old history
+      # away and publishes the repo as a single fresh commit.
+      - name: draw today's
+        run: |
+          rm -rf art
+          python3 scripts/draw.py
+      - name: replace history with one commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan today
+          git add -A
+          git commit -m "No. $(( ( $(date -u +%s) - $(date -u -d 2020-01-01 +%s) ) / 86400 + 1 ))"
+          git push --force origin today:main
