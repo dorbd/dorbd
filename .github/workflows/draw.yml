@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   draw:
@@ -27,3 +28,13 @@ jobs:
           git add -A
           git commit -m "No. $(( ( $(date -u +%s) - $(date -u -d 2020-01-01 +%s) ) / 86400 + 1 ))"
           git push --force origin today:main
+      # Same idea for Actions: keep only this run, delete every finished one.
+      - name: delete old workflow runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs?status=completed" \
+            --jq '.workflow_runs[].id')
+          for id in $ids; do
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/runs/$id" || true
+          done
